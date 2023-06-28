@@ -28,6 +28,7 @@ Install the special runner with cargo:
 ```bash
 cargo install --git https://github.com/rambip/wasm-test
 ```
+(if it doesn't work, you can add the `--target <your target>` to cargo install, see [here](https://github.com/rust-lang/cargo/issues/5441) for why)
 
 Then, add this line to your `.cargo/config.toml`
 ```toml
@@ -35,7 +36,7 @@ Then, add this line to your `.cargo/config.toml`
 target = "wasm32-unknown-unknown"
 
 [target.wasm32-unknown-unknown]
-runner = "~/.cargo/bin/wasm-test"
+runner = "wasm-test"
 ```
 
 
@@ -44,9 +45,15 @@ Now, you should be able to run your unit-tests as usual !
 cargo test
 ```
 
-# Note
+# Notes
 
-For now, the #[should_panic] attribute is not supported, sorry
+- The goal of this crate is to test the logic all the **wasm** part of your code.
+That means you can write unit-tests, bun you cannot test javascript code.
+If you want integration tests with javascript instead, please use [wasm-bindgen-test](https://rustwasm.github.io/docs/wasm-bindgen/wasm-bindgen-test/index.html)
+
+
+- For now, the #[should_panic] attribute is not supported, sorry
+support coming soon
 
 # TODO
 
