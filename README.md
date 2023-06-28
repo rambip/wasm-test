@@ -58,14 +58,7 @@ support coming soon
 # TODO
 
 - support should_panic
-- create tests
-- split into 2 crates:
-    - wasm-test with only the proc-macro
-    - wasm-test-runner with the wasmer project
-
-Or set a compilation flag to compile
-- only the proc-macro when wasm32
-- only the wasmer when native
+- create better tests
 
 # SOURCES
 https://docs.rs/wasm-bindgen-test-macro/0.3.37/src/wasm_bindgen_test_macro/lib.rs.html#14-17
