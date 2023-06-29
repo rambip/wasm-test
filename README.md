@@ -13,6 +13,8 @@ wasm-test = {git="https://github.com/rambip/wasm-test"}
 
 In your rust project, you can replace the `#[test]` invocation by
 ```
+use wasm_test::*;
+
 [wasm_test]
 fn test_should_pass(){
     assert!(true);
@@ -32,7 +34,7 @@ cargo install --git https://github.com/rambip/wasm-test
 
 Then, add this line to your `.cargo/config.toml`
 ```toml
-[test]
+[build]
 target = "wasm32-unknown-unknown"
 
 [target.wasm32-unknown-unknown]
