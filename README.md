@@ -11,18 +11,21 @@ First, add wasm-test as a dev-dependency in your `Cargo.toml`
 wasm-test = {git="https://github.com/rambip/wasm-test"}
 ```
 
-In your rust project, you can replace the `#[test]` invocation by
-```
-use wasm_test::*;
+In your rust project, you can replace the `#[test]` invocation by `#[wasm_test]` like so:
+```rust
+#[cfg(test)]
+mod tests {
+    use wasm_test::*;
 
-[wasm_test]
-fn test_should_pass(){
-    assert!(true);
-}
+    [wasm_test]
+    fn test_should_pass(){
+        assert!(true);
+    }
 
-[wasm_test]
-fn test_should_fail(){
-    assert!(false);
+    [wasm_test]
+    fn test_should_fail(){
+        assert!(false);
+    }
 }
 ```
 
