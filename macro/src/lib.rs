@@ -80,7 +80,7 @@ fn collect_tokens_before_function (
                 "the only valid keyword here is `fn`"
                 )),
             TokenTree::Punct(p) if p.as_char() == '#' => {
-                let attribute = body.next().expect("# punctuation is makes no sense");
+                let attribute = body.next().expect("# punctuation here makes no sense");
                 
                 if is_should_panic(&attribute)? {
                     strategy = PanicStrategy::ShouldPanic;
