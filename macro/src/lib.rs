@@ -95,9 +95,6 @@ fn generate_output(name: &str, should_panic: bool, body: TokenStream) -> TokenSt
 fn wasm_test_with_error(content: TokenStream) 
      -> Result<TokenStream> {
 
-    // let mut cursor = Cursor::new();
-    // let unit_test : UnitTest = content.parse(&mut cursor)?;
-    
     let declaration = venial::parse_declaration(content)?;
 
     if let Declaration::Function(f) = declaration  {
@@ -124,7 +121,6 @@ fn wasm_test_with_error(content: TokenStream)
 fn replace_print_calls_in_body(s: TokenStream) -> TokenStream {
     enum ReadingState {
         Default,
-        AfterReadPunct,
         AfterReadPrint,
         AfterReadPrintln,
         AfterReadPrintMacro,
@@ -155,16 +151,22 @@ fn replace_print_calls_in_body(s: TokenStream) -> TokenStream {
             }
             (TokenTree::Group(g), AfterReadPrintMacro) => {
                 let content = g.stream();
+                state = Default;
                 quote!{
+                    {
                     let string = format!( #content );
                     ::wasm_test::_lib::print(string);
+                    }
                 }
             },
             (TokenTree::Group(g), AfterReadPrintlnMacro) => {
                 let content = g.stream();
+                state = Default;
                 quote!{
+                    {
                     let string = format!( #content );
                     ::wasm_test::_lib::println(string);
+                    }
                 }
             },
             (TokenTree::Group(g), _) =>  
