@@ -1,4 +1,7 @@
 #[cfg(not(target_arch = "wasm32"))]
-compile_error!("this can only compile for wasm32 target !");
+compile_error!{"`wasm-test` can only be used for wasm32, try changing your `target` settings"}
 
 pub use wasm_test_macro::wasm_test;
+
+pub mod _lib;
+
