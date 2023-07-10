@@ -15,8 +15,6 @@ use wasmer::{
     Exports
 };
 
-use wasmer_types::TrapCode;
-
 use std::cell::RefCell;
 use colored::Colorize;
 
@@ -181,22 +179,14 @@ fn run_unit_test(store: &mut Store, unit: UnitTest) -> Option<()> {
             println!("\ttest `{}::{}` --> {}", unit.path, unit.name, "ok".green());
             Some(())
         },
-        _ => {
+        Ok(_) => {
+            println!("\ttest `{}::{}` --> {}", unit.path, unit.name, "FAILED".red());
+            println!("this test should have panicked.\n");
+            None
+        }
+        Err(_) => {
             println!("\ttest `{}::{}` --> {}", unit.path, unit.name, "FAILED".red());
             None
         }
-    }
-}
-
-fn show_backtrace(x: wasmer::RuntimeError) {
-    match x.clone().to_trap() {
-        Some(c) if c == TrapCode::UnreachableCodeReached => {
-            println!("test failed");
-            for stackframe in x.trace() {
-                println!("stack frame: {:?}", stackframe);
-            }
-        },
-        Some(x) => println!("error: {}", x),
-        None => println!("the runtime error is {}", x)
     }
 }
