@@ -32,6 +32,11 @@ fn has_should_panic(f: &Function) -> Result<bool> {
         return Ok(false);
     }
     if f.attributes.len() > 1 {
+        let last = f.attributes.last().unwrap();
+        return Err(Error::new_at_span(
+                f.attributes[0].tk_hash.span().join(last.tk_hash.span()).unwrap(),
+                "the only attribute you can add here is `should_panic`"
+                ))
     }
 
     if f.attributes[0].path.len() != 1
