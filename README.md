@@ -42,7 +42,7 @@ Then, add this line to your `.cargo/config.toml`
 target = "wasm32-unknown-unknown"
 
 [target.wasm32-unknown-unknown]
-runner = "wasm-test-run"
+runner = "wasm-test"
 ```
 
 
