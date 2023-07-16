@@ -3,5 +3,5 @@ compile_error!{"`wasm-test` can only be used for wasm32, try changing your `targ
 
 pub use wasm_test_macro::wasm_test;
 
-pub mod _lib;
-
+#[path = "./runtime.rs"]
+pub mod __runtime;
