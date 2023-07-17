@@ -21,6 +21,8 @@ use colored::Colorize;
 use serde::Deserialize;
 use serde_json;
 
+use itertools::Itertools;
+
 fn throw(_: u32, _: u32) { }
 
 fn table_grow(_: u32) -> u32 { 0 }
@@ -30,7 +32,8 @@ fn table_set_null(_: u32) { }
 fn describe(_: u32) { }
 
 struct WasmEnv {
-    memory: RefCell<Memory>
+    memory: RefCell<Memory>,
+    output: String,
 }
 
 fn get_string(view: MemoryView, ptr: u32) -> String {
@@ -39,24 +42,19 @@ fn get_string(view: MemoryView, ptr: u32) -> String {
        .expect("error reading string")
 }
 
-fn wasm_print(env: FunctionEnvMut<WasmEnv>, ptr: u32){
-    let memory = env.data().memory.borrow();
-    let view = memory.view(&env);
-    print!("{}", get_string(view, ptr));
+fn wasm_print(mut env: FunctionEnvMut<WasmEnv>, ptr: u32){
+    let string = {
+        let memory = env.data().memory.borrow();
+        let view = memory.view(&env);
+        get_string(view, ptr)
+    };
+    env.data_mut().output.push_str(&string);
 }
 
 
-fn init_wasm_module(filename: &str, store: &mut Store) -> Instance {
+fn init_wasm_module(filename: &str, store: &mut Store, f_env: &mut FunctionEnv<WasmEnv>) -> Instance {
 
     let module = Module::from_file(&store, filename).expect("unable to load module");
-
-    let fake_memory = Memory::new(store, MemoryType::new(0, None, false)).unwrap();
-    let env = FunctionEnv::new(
-        store,
-        WasmEnv {
-            memory: RefCell::new(fake_memory),
-        },
-    );
 
     let instance = {
         let import_object = imports! {
@@ -69,7 +67,7 @@ fn init_wasm_module(filename: &str, store: &mut Store) -> Instance {
                 "__wbindgen_externref_table_set_null" => Function::new_typed(store, table_set_null),
             },
             "env" => {
-                "__wasm_print" => Function::new_typed_with_env(store, &env, wasm_print),
+                "__wasm_print" => Function::new_typed_with_env(store, f_env, wasm_print),
             }
         };
 
@@ -78,7 +76,7 @@ fn init_wasm_module(filename: &str, store: &mut Store) -> Instance {
     };
 
     // init memory
-    let mut mem = env.as_ref(store).memory
+    let mut mem = f_env.as_ref(store).memory
         .borrow_mut();
 
     *mem = instance.exports.get_memory("memory").expect("could not find memory of wasm").clone(); 
@@ -125,10 +123,18 @@ fn make_unit_test<'a>(store: &mut Store, exports: &Exports, name: &str, f: &'a F
 }
 
 pub fn run(filename: &str) -> bool {
-    let singlepass = Singlepass::new();
-    let mut store = Store::new(singlepass);
+    let mut store = Store::new(Singlepass::new());
 
-    let exports = init_wasm_module(filename, &mut store).exports;
+    let fake_memory = Memory::new(&mut store, MemoryType::new(0, None, false)).unwrap();
+
+    let mut f_env = FunctionEnv::new(
+        &mut store,
+        WasmEnv {
+            memory: RefCell::new(fake_memory),
+            output: String::new(),
+    });
+
+    let exports = init_wasm_module(filename, &mut store, &mut f_env).exports;
 
     let test_functions = 
         exports.iter().functions()
@@ -148,12 +154,9 @@ pub fn run(filename: &str) -> bool {
         return true;
     }
 
-    let maybe_s = if n_functions == 1 {""} else {"s"};
-    println!("running {} test{}\n", n_functions, maybe_s);
-
     let n_success = unit_tests
         .into_iter()
-        .filter_map(|unit| run_unit_test(&mut store, unit))
+        .filter_map(|unit| run_unit_test(&mut store, unit, &mut f_env))
         .count();
 
     println!();
@@ -169,23 +172,41 @@ pub fn run(filename: &str) -> bool {
     }
 }
 
-fn run_unit_test(store: &mut Store, unit: UnitTest) -> Option<()> {
+fn print_pretty_output(store: &mut Store, f_env: &mut FunctionEnv<WasmEnv>) {
+    let output = f_env
+        .as_ref(store)
+        .output
+        .split("\n")
+        .map(|w| " |".blue().to_string() + w)
+        .join("\n");
+
+    if !output.is_empty() {
+        println!("{}", "standard output of test:".blue());
+        println!("{output}");
+    }
+}
+
+fn run_unit_test(store: &mut Store, unit: UnitTest, f_env: &mut FunctionEnv<WasmEnv>) -> Option<()> {
+    f_env.as_mut(store).output.clear();
+
     match unit.function.call(store, &[]) {
         Ok(_) if ! unit.should_panic => {
-            println!("\ttest `{}::{}` --> {}", unit.path, unit.name, "ok".green());
+            println!("`{}::{}` --> {}", unit.path, unit.name, "ok".green());
             Some(())
         },
         Err(_) if unit.should_panic => {
-            println!("\ttest `{}::{}` --> {}", unit.path, unit.name, "ok".green());
+            println!("`{}::{}` --> {}", unit.path, unit.name, "ok".green());
             Some(())
         },
         Ok(_) => {
-            println!("\ttest `{}::{}` --> {}", unit.path, unit.name, "FAILED".red());
+            println!("`{}::{}` --> {}", unit.path, unit.name, "FAILED".red());
             println!("this test should have panicked.\n");
+            print_pretty_output(store, f_env);
             None
         }
-        Err(_) => {
-            println!("\ttest `{}::{}` --> {}", unit.path, unit.name, "FAILED".red());
+        Err(_x) => {
+            println!("`{}::{}` --> {}", unit.path, unit.name, "FAILED".red());
+            print_pretty_output(store, f_env);
             None
         }
     }
