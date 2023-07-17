@@ -1,6 +1,6 @@
 # Goal
 
-This crate offer a way to do unit-tests in yew.
+This crate offer a way to do unit-tests in wasm-based projects.
 It is a feature that many people want, but it is quite hard to do it right because of the way `wasm-bindgen` is build.
 
 # Usage
@@ -36,7 +36,7 @@ cargo install wasm-test-runner
 ```
 (if it doesn't work, you can add the `--target <your target>` to cargo install, see [here](https://github.com/rust-lang/cargo/pull/5614) for why)
 
-Then, add this line to your `.cargo/config.toml`
+Then, add this line to the `.cargo/config.toml` of your project
 ```toml
 [build]
 target = "wasm32-unknown-unknown"
